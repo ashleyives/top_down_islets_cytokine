@@ -4,8 +4,6 @@ library(Seurat)
 library(viridis)
 library(gt)
 
-# nm = load("msnset_humanislet_int_notnormalized.RData") #this has not been normalized, can use it to compare to normalized data? 
-
 load("msnset_humanislet_int_notnormalized.RData")
 
 exprs(m) <- log2(exprs(m))
@@ -14,11 +12,6 @@ norm_coeffs <- apply(exprs(m), 2, median, na.rm = T) #calculates the median of e
 exprs(m) <- sweep(exprs(m), 2, norm_coeffs, FUN = "-") #applies normalization to msnset via sweep, because it's log transformed us Fun = "_"
 
 exprs(m) <- 2^(exprs(m))
-
-#==================================
-#let's calculate RSD per file first 
-
-#convert to long 
 
 x <- exprs(m) %>%
   as.data.frame() %>%
@@ -70,7 +63,7 @@ meta <- fData(m) %>%
   dplyr::select(firstAA, lastAA, PF, Proteoform, Gene, UniProtAcc)%>%
   mutate(isSig = ifelse(PF %in% uniquePFs$PF, TRUE, FALSE))
 
-#JMF original plot 
+#original plot 
 # plot <- x %>%
 #   filter(PF %in% uniquePFs$PF) %>%
 #   mutate(Sample = paste(Treatment, Pair, sep  = "_")) %>%
@@ -152,24 +145,24 @@ ggsave(plot = combplot, filename= "FigureS_CXCL.png", scale=1.5,
        dpi = 800,
        units = c("mm"))
 
-
-# uniquePF_Pair <- x %>%
-#   filter(!is.na(Intensity)) %>%
-#   group_by(PF) %>%
-#   add_count(name = "TotalN") %>%
-#   group_by(Pair, PF) %>%
-#   add_count(name = "GroupN") %>%
-#   ungroup() %>%
-#   group_by(Pair) %>%
-#   mutate(GroupSize = max(GroupN)) %>%
-#   filter(GroupSize == GroupN) %>%
-#   mutate(Check1 = TotalN - GroupSize) %>%
-#   ungroup() %>%
-#   mutate(Prob0 = (factorial(nrow(SampleID_meta)-GroupSize))/(factorial(Check1)*factorial((nrow(SampleID_meta)-GroupSize)-Check1))) %>%
-#   mutate(Prob1 = (factorial(nrow(SampleID_meta)))/(factorial(TotalN)*factorial(nrow(SampleID_meta)-TotalN))) %>%
-#   mutate(Probability = Prob0/Prob1) %>%
-#   group_by(Pair, PF, Probability) %>%
-#   summarize(Avg = mean(Intensity))  %>%
-#   ungroup() %>%
-#   filter(Probability < 0.01) 
+#which PFRs are significant by hypergeometric distribution 
+uniquePF_Pair <- x %>%
+  filter(!is.na(Intensity)) %>%
+  group_by(PF) %>%
+  add_count(name = "TotalN") %>%
+  group_by(Pair, PF) %>%
+  add_count(name = "GroupN") %>%
+  ungroup() %>%
+  group_by(Pair) %>%
+  mutate(GroupSize = max(GroupN)) %>%
+  filter(GroupSize == GroupN) %>%
+  mutate(Check1 = TotalN - GroupSize) %>%
+  ungroup() %>%
+  mutate(Prob0 = (factorial(nrow(SampleID_meta)-GroupSize))/(factorial(Check1)*factorial((nrow(SampleID_meta)-GroupSize)-Check1))) %>%
+  mutate(Prob1 = (factorial(nrow(SampleID_meta)))/(factorial(TotalN)*factorial(nrow(SampleID_meta)-TotalN))) %>%
+  mutate(Probability = Prob0/Prob1) %>%
+  group_by(Pair, PF, Probability) %>%
+  summarize(Avg = mean(Intensity))  %>%
+  ungroup() %>%
+  filter(Probability < 0.01)
 
