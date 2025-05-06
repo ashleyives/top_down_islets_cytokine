@@ -11,16 +11,6 @@ if("toppic_output_humanislet.RData" %in% list.files()){
   save(toppic_output, file = "toppic_output_humanislet.RData")
 }
 
-
-ids <- toppic_output$ms2identifications %>%
-  filter(!str_detect(Dataset, "TopDown_HumanIslet_E_Nottreated_24hr_1_Aragorn_21Mar24_BMEB-21-09-03")) %>%
-  filter(!str_detect(Dataset, "TopDown_HumanIslet_J_Treated_24hr_2_Aragorn_21Mar24_BMEB-21-09-03"))
-
-
-feat <- toppic_output$ms1features %>%
-  filter(!str_detect(Dataset, "TopDown_HumanIslet_E_Nottreated_24hr_1_Aragorn_21Mar24_BMEB-21-09-03")) %>%
-  filter(!str_detect(Dataset, "TopDown_HumanIslet_J_Treated_24hr_2_Aragorn_21Mar24_BMEB-21-09-03"))
-
 # remove NA annotations. We can't handle them at the FDR filter tuning step
 # Those are non-uniprot IDs, like short ORFs and contaminants
 ids <- ids %>%
@@ -32,14 +22,6 @@ ids <- ids %>%
 feat <- feat %>%
   mutate(CV = as.character(str_sub(Dataset,-2,-1))) %>%
   mutate(Dataset = as.character(str_sub(Dataset,1,-5))) 
-
-#find oxidized ins forms for manual ms/ms inspection 
-ids %>%
-  filter(Gene == "INS") %>%
-  filter(firstAA == 25) %>%
-  filter(lastAA == 54) %>%
-  filter(grepl("31", Proteoform)) %>%
-  View()
 
 #!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!
 #!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!
@@ -105,8 +87,6 @@ compute_fdr(x_fdr)
 # Proteoform inference ---------------
 x_ipf <- infer_prot(x_fdr)
 
-
-###in progress? 
 x_inferred <- set_pf_level(x_ipf)
 
 compute_fdr(x_ipf)
@@ -191,17 +171,6 @@ feat_rcm <- recalibrate_mass(
   var_name = "Mass")
 
 
-#I don't think we need this for sc data 
-
-# feat_rtv <- match_features(ms2 = x_recluster,
-#                            ms1 = feat_rcm,
-#                            errors = x_error,
-#                            n_mme_sd = 5,
-#                            n_rt_sd = 3
-# )
-
-
-
 x <- x_recluster %>%
   mutate(feature_name = paste(Gene, pcGroup, CV, sep = "_"),
          sample_name = Dataset) %>%
@@ -258,9 +227,6 @@ x_pheno <- x %>%
   {rownames(.) <- .$sample_name;.} 
 
 m <- MSnSet(x_expr, x_feat[rownames(x_expr),], x_pheno[colnames(x_expr),])
-
-#plot isn't correct, check x_exprs 
-# image_msnset(m)
 
 save(m, file="msnset_humanislet_sc_JMFclustering.RData")
 
