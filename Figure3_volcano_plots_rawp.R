@@ -4,52 +4,15 @@ library(ggpubr)
 library(ggrepel)
 library(tidyverse)
 library(grid) #for weird volcano plot labels 
-library(gprofiler2) #gost
 
 colorBlindGrey8   <- c("#999999", "#E69F00", "#56B4E9", "#009E73", 
                        "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
 
-#Data is made in Tyler_DEA.R 
+#Data is made in 1_DEA.R 
 load("res_forvolcano.RData")
 
 res <- res %>%
   filter(notna > 4) #must be in at least 4 of 12 total samples
-
-#what is downregulated 
-down <- res %>%
-  filter(P.Value < 0.05) %>%
-  filter(logFC < 0) 
-
-#what is upregulated 
-up <- res %>%
-  filter(P.Value < 0.05) %>%
-  filter(logFC > 0)
-
-#gost of up and down regulated terms, background should be observed genes, not entire proteome  
-#takes hgnc terms, correct background is not human genome but all observed proteins in sample
-gostres <- gprofiler2::gost(query = unique(up$Gene),
-                            organism = "hsapiens",
-                            ordered_query = F, 
-                            multi_query = FALSE, significant = FALSE, exclude_iea = F, 
-                            measure_underrepresentation = FALSE, evcodes = TRUE, 
-                            user_threshold = 0.05, correction_method = "g_SCS", 
-                            domain_scope = "annotated", 
-                            custom_bg = unique(res$Gene), 
-                            numeric_ns = "", sources = c("GO"), as_short_link = FALSE)
-
-gostres$result %>% View()
-
-gostres <- gprofiler2::gost(query = unique(down$Gene),
-                            organism = "hsapiens",
-                            ordered_query = F, 
-                            multi_query = FALSE, significant = FALSE, exclude_iea = F, 
-                            measure_underrepresentation = FALSE, evcodes = TRUE, 
-                            user_threshold = 0.05, correction_method = "g_SCS", 
-                            domain_scope = "annotated", 
-                            custom_bg = unique(res$Gene), 
-                            numeric_ns = "", sources = c("GO"), as_short_link = FALSE)
-
-gostres$result %>% View()
 
 minpoint <- 2
 maxpoint <- 6
@@ -173,7 +136,6 @@ res %>%
   filter(segment == "Glicentin") %>%
   filter(logFC > 0) %>%
   nrow()
-  
 
 #only CHGA with categories based on fragment range 
 panelchga <- res %>%
@@ -298,50 +260,4 @@ ggsave(plot = combined_plot, filename= "Figure3_volcanoplots.png",
        height = 150,
        dpi = 800,
        units = c("mm"))
-
-
-
-#also check SST, no clear pattern here
-panelsst <- res %>%
-  filter(Gene == "SST") %>%
-  mutate(segment = case_when(
-    between(firstAA, 89, 116) & between(lastAA, 89, 116) ~ "Somatostatin",
-    between(firstAA, 1, 88) & between(lastAA, 1, 88) ~ "Pro",
-    TRUE ~ "Other"
-  )) %>%
-  mutate(MissingPercent = 100 * (1 - MissingPercent)) %>% # Reverse the scale and convert to percentage
-  ggplot(aes(x = logFC, y = -log10(P.Value), color = segment, size = MissingPercent)) +
-  geom_hline(yintercept = -log10(0.05), linetype = "dashed", color = "gray", size = 1) +
-  geom_vline(xintercept = -1, linetype = "dashed", color = "gray", size = 1) +
-  geom_vline(xintercept = 1, linetype = "dashed", color = "gray", size = 1) +
-  geom_point(alpha = 0.5) +
-  theme_minimal(base_size = 18) +
-  theme(
-    panel.border = element_rect(color = "black", fill = NA, size = 1),
-    axis.line = element_line(color = "black"),
-    axis.ticks = element_line(color = "black"),
-    axis.text = element_text(color = "black"),
-    axis.title = element_text(color = "black"),
-    legend.key.size = unit(0.5, "cm"),  # Shrinking the size of the legend keys
-    legend.text = element_text(size = 10),  # Shrinking the size of the legend text
-    legend.title = element_text(size = 12),   # Shrink the size of the legend title
-    plot.margin = unit(c(1, 1, 3.5, 1), "lines") # Add margin space at the bottom
-  ) +
-  scale_size_continuous(
-    range = c(maxpoint, minpoint),  # Adjust the size range for points
-    labels = c("0%", "20%", "40%", "60%", "80%", "100%"), # Ensure labels cover the percentage range
-    breaks = c(0, 20, 40, 60, 80, 100) # Breaks corresponding to percentages
-  ) +
-  scale_color_manual(values = colorBlindGrey8) +
-  guides(
-    color = guide_legend(order=1, override.aes = list(size = 6), title = "SST Fragment"),
-    size = guide_legend(order=2,title = "Missing Data (%)")
-    # Increase the size of points in color legend
-  ) +
-  labs(x = expression(Log[2] * " fold change"), y = expression(-Log[10] * "P")) +
-  # annotate("text", x = 4.5, y = 5.5, label = "Up in Treatment", color = "black", size = 5, hjust = 1) +
-  # annotate("text", x = -4.5, y = 5.5, label = "Down in Treatment", color = "black", size = 5, hjust = 0)+
-  xlim(-2.5,2.5)+
-  ggtitle("SST Proteforms")
-panelsst
 
