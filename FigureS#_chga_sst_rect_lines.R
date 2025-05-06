@@ -18,13 +18,6 @@ colorblind_palette <- colorblind_pal()(8)
 
 #SST 
 ###########################################
-###########################################
-###########################################
-###########################################
-###########################################
-###########################################
-
-
 load("msnset_humanislet_sc_JMFclustering_wmodanno.RData")
 
 x <- exprs(m) %>%
@@ -66,7 +59,6 @@ load("x_recluster_oct2024_sc.RData")
 plot2 <- read.csv("adjusted_forSSTplot.csv")
 
 #set offset for SP, can change back to 0 if you want to rescale plots 
-# offset <- 24
 offset <- 0
 
 labels <- plot2 %>%
@@ -134,10 +126,6 @@ labelsinplot2 <- temp %>%
   mutate(feature_name = ordered(feature_name, levels= unique(feature_name))) %>%
   left_join(labels)
 
-#for abeta   
-# temp <- temp %>%
-#   mutate(refAA = case_when(terminus == "firstAA" ~ 1, TRUE ~ 40))  
-
 mod_cols <- c("grey60",'#e41a1c','#377eb8','#4daf4a','#ff7f00','#ffff33','#a65628','#f781bf', '#00ACC1', '#673AB7')
 
 library(ggplot2)
@@ -166,10 +154,6 @@ p3 <- temp %>%
   mutate(firstAA = firstAA - offset) %>%
   mutate(lastAA = lastAA - offset) %>%
   ggplot() +
-  # Add the first set of rectangles using rect_data
-  # geom_rect(data = rect_data, 
-  #           aes(xmin = xmin, xmax = xmax, ymin = -Inf, ymax = Inf, fill = `Fragments of SST`), 
-  #           alpha = 0.2, inherit.aes = FALSE, show.legend = TRUE) +
   geom_vline(data = rect_data, aes(xintercept = xmin, color = `Fragments of SST`), size = linesize, alpha = linealpha, linetype = "dashed", inherit.aes = FALSE, show.legend = TRUE) +
   geom_vline(data = rect_data, aes(xintercept = xmax, color = `Fragments of SST`), size = linesize, alpha = linealpha, linetype = "dashed", inherit.aes = FALSE, show.legend = FALSE) +
   scale_colour_colorblind()+
@@ -222,13 +206,6 @@ combined_plot_sst
 
 #CHGA 
 ###########################################
-###########################################
-###########################################
-###########################################
-###########################################
-###########################################
-###########################################
-
 
 load("msnset_humanislet_sc_JMFclustering_wmodanno.RData")
 
@@ -267,7 +244,6 @@ plot <- fData(m) %>%
                 cleanSeq = sub("^[A-Z]?\\.(.*)\\.[A-Z]?", "\\1", cleanSeq)) %>%
   filter(!str_detect(Proteoform, "-57.02")) %>% #remove a missed alkylation, which is about same mass as Arg->Val
   filter(!str_detect(Proteoform, "150.0")) %>% #remove DTT adduct 
-  # filter(!str_detect(mods, "NH3")) %>% 
   filter(Gene == "CHGA") %>%
   arrange(desc(count)) %>%  # Sorts the data in descending order based on spectral_counts
   slice_head(n = 30)   # Selects the top 20 rows
@@ -282,40 +258,10 @@ plot <- fData(m) %>%
 
 load("x_recluster_oct2024_sc.RData")
 
-#find scans with lowest E value for each pfr filtered in plot above 
-#remember that lowest e value scan might not match exact pfr pulled from fData
-x_recluster %>%
-  mutate(PF = paste(Gene, pcGroup, sep="_")) %>%
-  filter(PF %in% plot$PF) %>%
-  group_by(PF) %>%
-  slice_min(`E-value`) %>%
-  View()
-
-x_recluster %>%
-  mutate(PF = paste(Gene, pcGroup, sep="_")) %>%
-  filter(PF %in% plot$PF) %>%
-  filter(str_detect(Proteoform, "Phosph")) %>%
-  # group_by(PF) %>%
-  # slice_min(`E-value`) %>%
-  # filter(`#unexpected modifications` == 1) %>%
-  #filter(PF == "GCG_164") %>%
-  View()
-
-
-x_recluster %>%
-  mutate(PF = paste(Gene, pcGroup, sep="_")) %>%
-  filter(PF %in% plot$PF) %>%
-  group_by(PF) %>%
-  slice_min(`E-value`) %>%
-  View()
-
 #polished plot 
-
-# plot2 <- read.csv("adjusted_forchgaplot.csv")
 plot2 <- read.csv("adjusted_forchgaplot_2.csv")
 
 #set offset for SP, can change back to 0 if you want to rescale plots 
-# offset <- 18
 offset <- 0
 
 labels <- plot2 %>%
@@ -383,10 +329,6 @@ labelsinplot2 <- temp %>%
   mutate(feature_name = ordered(feature_name, levels= unique(feature_name))) %>%
   left_join(labels)
 
-#for abeta   
-# temp <- temp %>%
-#   mutate(refAA = case_when(terminus == "firstAA" ~ 1, TRUE ~ 40))  
-
 mod_cols <- c("grey60",'#e41a1c','#377eb8','#4daf4a','#984ea3','#ff7f00','#ffff33','#a65628','#f781bf','#999999', '#00ACC1', '#673AB7')
 
 library(ggplot2)
@@ -405,7 +347,6 @@ rect_data$fill_label <- factor(rect_data$fill_label, levels = rect_data$fill_lab
 
 rect_data$"Fragments of CHGA" <- rect_data$fill_label 
 
-#need to adjust to SP length so plot starts at -SP
 p3 <- temp %>%
   mutate(facet_var = "Proteoforms of CHGA (P10645)") %>%
   mutate(
@@ -415,10 +356,6 @@ p3 <- temp %>%
   mutate(firstAA = firstAA - offset) %>%
   mutate(lastAA = lastAA - offset) %>%
   ggplot() +
-  # Add the first set of rectangles using rect_data
-  # geom_rect(data = rect_data, 
-  #           aes(xmin = xmin, xmax = xmax, ymin = -Inf, ymax = Inf, fill = `Fragments of CHGA`), 
-  #           alpha = 0.2, inherit.aes = FALSE, show.legend = TRUE) +
   geom_vline(data = rect_data, aes(xintercept = xmin, color = `Fragments of CHGA`), size = linesize, alpha = linealpha, linetype = "dashed", inherit.aes = FALSE, show.legend = TRUE) +
   geom_vline(data = rect_data, aes(xintercept = xmax, color = `Fragments of CHGA`), size = linesize, alpha = linealpha, linetype = "dashed", inherit.aes = FALSE, show.legend = FALSE) +
   scale_colour_colorblind()+
@@ -469,28 +406,7 @@ combined_plot_chga <- p0 + p3 +
               guides = "collect")
 combined_plot_chga
 
-
-# #combine and save plots 
-# combined_plot <- combined_plot_sst / combined_plot_chga+
-#   plot_annotation(tag_levels = list('A'))& 
-#   theme(plot.margin = unit(c(0.1, 0.1, 0.1, 0.1), "cm"))
-# combined_plot
-# 
-# ggsave(plot = combined_plot, filename= "FigureS_sst_chga.png", 
-#        scale=2.2, 
-#        width = 170,
-#        height = 170,
-#        dpi = 800,
-#        units = c("mm"))
-# 
-
-
 #CHGB
-###########################################
-###########################################
-###########################################
-###########################################
-###########################################
 ###########################################
 
 load("msnset_humanislet_sc_JMFclustering_wmodanno.RData")
@@ -550,7 +466,6 @@ load("x_recluster_oct2024_sc.RData")
 plot2 <- read.csv("adjusted_forchgbplot.csv")
 
 #set offset for SP, can change back to 0 if you want to rescale plots 
-# offset <- 18
 offset <- 0
 
 labels <- plot2 %>%
@@ -600,7 +515,6 @@ p0 <- plot2 %>%
   labs(y="Proteoform Identifier")+
   scale_y_discrete(name = NULL, expand = expansion(0.02),
                    labels= labelsinplot$feature_name2)
-#labels= ABlabels$feature_name2)
 p0
 
 temp <-  plot2 %>%
@@ -617,10 +531,6 @@ labelsinplot2 <- temp %>%
   arrange(desc(lastAA), desc(firstAA)) %>%
   mutate(feature_name = ordered(feature_name, levels= unique(feature_name))) %>%
   left_join(labels)
-
-#for abeta   
-# temp <- temp %>%
-#   mutate(refAA = case_when(terminus == "firstAA" ~ 1, TRUE ~ 40))  
 
 mod_cols <- c('#e41a1c',"grey60",'#377eb8','#4daf4a','#984ea3','#ff7f00','#ffff33','#a65628','#f781bf','#999999', '#00ACC1', '#673AB7')
 
@@ -640,7 +550,6 @@ rect_data$fill_label <- factor(rect_data$fill_label, levels = rect_data$fill_lab
 
 rect_data$"Fragments of CHGB" <- rect_data$fill_label 
 
-#need to adjust to SP length so plot starts at -SP
 p3 <- temp %>%
   mutate(facet_var = "Proteoforms of CHGB (P05060)") %>%
   mutate(
@@ -650,10 +559,6 @@ p3 <- temp %>%
   mutate(firstAA = firstAA - offset) %>%
   mutate(lastAA = lastAA - offset) %>%
   ggplot() +
-  # Add the first set of rectangles using rect_data
-  # geom_rect(data = rect_data, 
-  #           aes(xmin = xmin, xmax = xmax, ymin = -Inf, ymax = Inf, fill = `Fragments of CHGB`), 
-  #           alpha = 0.2, inherit.aes = FALSE, show.legend = TRUE) +
   geom_vline(data = rect_data, aes(xintercept = xmin, color = `Fragments of CHGB`), size = linesize, alpha = linealpha, linetype = "dashed", inherit.aes = FALSE, show.legend = TRUE) +
   geom_vline(data = rect_data, aes(xintercept = xmax, color = `Fragments of CHGB`), size = linesize, alpha = linealpha, linetype = "dashed", inherit.aes = FALSE, show.legend = FALSE) +
   scale_colour_colorblind()+
@@ -664,13 +569,6 @@ p3 <- temp %>%
                 fill = modification), 
             stat = "identity", color = "black", size = 0.1) +
   facet_grid(cols = vars(facet_var)) +
-  # First fill scale for rect_data
-  # scale_fill_manual(
-  #   name = "Fragments of CHGB",
-  #   values = setNames(rect_data$fill_color, rect_data$`Fragments of CHGB`),
-  #   guide = guide_legend(order = 1)
-  # ) +
-  # Second fill scale for main data
   scale_fill_manual(
     name = "Modifications of CHGB",
     values = mod_cols,
@@ -718,7 +616,6 @@ ggsave(plot = combined_plot, filename= "FigureS_chga_chgb.png",
        height = 170,
        dpi = 800,
        units = c("mm"))
-
 
 ss_plot <- combined_plot_sst+
   plot_annotation(tag_levels = list('A'))& 
