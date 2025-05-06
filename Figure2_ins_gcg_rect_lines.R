@@ -1,12 +1,3 @@
-
-#not sure what count is, I think it's sum across total dataset, maybe try median counts? 
-#Asp->Met is probably oxidation 
-#Ala->Cys is probably dioixdation 
-#Thr->Asp is 13.979265, could also be Pro->pyro-Glu, localized to Tyrosine	
-#not sure what -17.7 is, not quiet a water or NH3 loss, the plot shows -17.7 but if you look at plot it's -18, so it's NH3 loss  
-#not sure what 150 is, 151 is DTT adduct on Cys?, decon mass in xtract is 3691.7555 but Toppic thinks it is +1Da heavier  
-#I think 150 is DTT+IAA on same cysteine in that same order 
-#128.0899 is not transpeptidation, that only happens on Nterm, James think's it's most likely gluatminylation, and not lys insertion 
 library(tidyverse)
 library(TopPICR) 
 library(MSnbase)
@@ -18,7 +9,6 @@ library(ggnewscale)
 library(scales) #colorblind palette
 library(ggthemes)
 
-
 textsize <- 18 
 linesize <- 1
 linealpha <- 1
@@ -28,11 +18,6 @@ colorblind_palette <- colorblind_pal()(8)
 
 #insulin 
 ###########################################
-
-
-#original 
-# load("msnset_humanislet_sc_modanno.RData")
-#uses "PF" instead of proteoform ID, so may need to switch if reverting back 
 
 load("msnset_humanislet_sc_JMFclustering_wmodanno.RData")
 
@@ -51,19 +36,6 @@ x_long <- x %>%
   pivot_longer(-proteoform_id, names_to = "SubjectID",
                values_to = "sc") %>%
   inner_join(.,meta_short)
-
-#all rows of n should be 12 if 0s are filled correctly 
-x_long %>%
-  group_by(proteoform_id) %>%
-  tally() %>%
-  View()
-
-#summarize by column sc across all 12 samples 
-x_long %>%
-  group_by(proteoform_id) %>%
-  summarize(meansc = mean(sc),
-            sdsc = sd(sc)) %>%
-  View()
 
 #here firstAA is based on gene, not on adjustment with SP 
 plot <- fData(m) %>%
@@ -85,43 +57,6 @@ plot <- fData(m) %>%
 
 #find scans with lowest E value for each pfr filtered in plot above 
 load("x_recluster_oct2024_sc.RData")
-
-x_recluster %>%
-  mutate(PF = paste(Gene, pcGroup, sep="_")) %>%
-  filter(PF %in% plot$PF) %>%
-  group_by(PF) %>%
-  slice_min(`E-value`) %>%
-  View()
-
-
-#weird notes, Nterm NH3 loss proteoform is a mix of two species, see manual MS2s, one is unmodified but different primary sequence 
-#There are no fragments directly supporting iron adduct 
-#+31 Da in B chain is Pro->Q mutant @52 
-#Dixoidation in Achain is not persulfide? seems to fit 31.9-32 much better by MS2 
-#waterloss on c peptide is pyroglu
-#INS_110 seems to have decon error on higher E value proteoforms, I don't think it's deamidation 
-
-x_recluster %>%
-  mutate(PF = paste(Gene, pcGroup, sep="_")) %>%
-  filter(PF %in% plot$PF) %>%
-  group_by(PF) %>%
-  filter(str_detect(Proteoform, "128")) %>%
-  filter(pcGroup == 13) %>% #weird 128
-  #filter(lastAA<60) %>%
-  # filter(pcGroup == 54) %>% #NH3 
-  # slice_min(`E-value`) %>%
-  # filter(`#unexpected modifications` == 1) %>%
-  View()
-
-x_recluster %>%
-  mutate(PF = paste(Gene, pcGroup, sep="_")) %>%
-  filter(PF %in% plot$PF) %>%
-  filter(pcGroup == 54) %>% #NH3 
-  ggplot()+
-  geom_point(aes(x=RTalign, y=log10(`Feature intensity`), color=MIScore), size=5)+
-  labs(x="RT align (sec)")+
-  facet_wrap(~Dataset)+
-  theme_bw()
 
 plot2 <- read.csv("adjusted_forINSplot_2.csv")
 
@@ -176,7 +111,6 @@ p0 <- plot2 %>%
   labs(y="Proteoform Identifier")+
   scale_y_discrete(name = NULL, expand = expansion(0.02),
                    labels= labelsinplot$feature_name2)
-#labels= ABlabels$feature_name2)
 p0
 
 temp <-  plot2 %>%
@@ -193,10 +127,6 @@ labelsinplot2 <- temp %>%
   arrange(desc(lastAA), desc(firstAA)) %>%
   mutate(feature_name = ordered(feature_name, levels= unique(feature_name))) %>%
   left_join(labels)
-
-#for abeta   
-# temp <- temp %>%
-#   mutate(refAA = case_when(terminus == "firstAA" ~ 1, TRUE ~ 40))  
 
 mod_cols <- c("grey60",'#e41a1c','#377eb8','#4daf4a','#ff7f00','#ffff33','#a65628','#f781bf', '#00ACC1', '#673AB7')
 
@@ -225,10 +155,6 @@ p3 <- temp %>%
   mutate(firstAA = firstAA - offset) %>%
   mutate(lastAA = lastAA - offset) %>%
   ggplot() +
-  # Add the first set of rectangles using rect_data
-  # geom_rect(data = rect_data, 
-  #           aes(xmin = xmin, xmax = xmax, ymin = -Inf, ymax = Inf, fill = `Fragments of INS`), 
-  #           alpha = 0.2, inherit.aes = FALSE, show.legend = TRUE) +
   geom_vline(data = rect_data, aes(xintercept = xmin, color = `Fragments of INS`), size = linesize, alpha = linealpha, linetype = "dashed", inherit.aes = FALSE, show.legend = TRUE) +
   geom_vline(data = rect_data, aes(xintercept = xmax, color = `Fragments of INS`), size = linesize, alpha = linealpha, linetype = "dashed", inherit.aes = FALSE, show.legend = FALSE) +
   scale_colour_colorblind()+
@@ -340,32 +266,9 @@ plot <- fData(m) %>%
 #find scans with lowest E value for each pfr filtered in plot above 
 load("x_recluster_oct2024_sc.RData")
 
-#do we see vanilla glucagon?
-x_recluster %>%
-  filter(Gene == "GCG") %>%
-  filter(firstAA == 53) %>%
-  filter(lastAA == 81) %>%
-  filter(`#unexpected modifications` == 0) %>%
-  View()
-
-
-
-#weird notes, GCG_164 is unmodified, but has 1 Da error in some runs 
-
-x_recluster %>%
-  mutate(PF = paste(Gene, pcGroup, sep="_")) %>%
-  filter(PF %in% plot$PF) %>%
-  filter(str_detect(Proteoform, "Phosph")) %>%
-  # group_by(PF) %>%
-  # slice_min(`E-value`) %>%
-  # filter(`#unexpected modifications` == 1) %>%
-  #filter(PF == "GCG_164") %>%
-  View()
-
 plot2 <- read.csv("adjusted_forGCGplot_2.csv")
 
 #set offset for SP, can change back to 0 if you want to rescale plots 
-# offset <- 20
 offset <- 0
 
 labels <- plot2 %>%
@@ -415,9 +318,6 @@ p0 <- plot2 %>%
   labs(y="Proteoform Identifier")+
   scale_y_discrete(name = NULL, expand = expansion(0.02),
                    labels= labelsinplot$feature_name2)
-# scale_y_discrete(name = NULL, expand = expansion(0.02),
-#                  labels= ABlabels$feature_name)
-#labels= ABlabels$feature_name2)
 p0
 
 temp <-  plot2 %>%
@@ -462,10 +362,6 @@ p3 <- temp %>%
   mutate(firstAA = firstAA - offset) %>%
   mutate(lastAA = lastAA - offset) %>%
   ggplot() +
-  # Add the first set of rectangles using rect_data
-  # geom_rect(data = rect_data, 
-  #           aes(xmin = xmin, xmax = xmax, ymin = -Inf, ymax = Inf, fill = `Fragments of GCG`), 
-  #           alpha = 0.2, inherit.aes = FALSE, show.legend = TRUE) +
   geom_vline(data = rect_data, aes(xintercept = xmin, color = `Fragments of GCG`), size = linesize, alpha = linealpha, linetype = "dashed", inherit.aes = FALSE, show.legend = TRUE) +
   geom_vline(data = rect_data, aes(xintercept = xmax, color = `Fragments of GCG`), size = linesize, alpha = linealpha, linetype = "dashed", inherit.aes = FALSE, show.legend = FALSE) +
   scale_colour_colorblind()+
@@ -509,7 +405,6 @@ p3 <- temp %>%
                      expand = expansion(0.015), position = "right")
 
 p3
-
 
 
 #GCG plot 
