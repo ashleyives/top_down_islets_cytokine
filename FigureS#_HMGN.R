@@ -2,8 +2,8 @@
 library(tidyverse)
 library(viridis)
 library(gt)
+library(patchwork)
 
-# nm = load("msnset_humanislet_int_notnormalized.RData") #this has not been normalized, can use it to compare to normalized data? 
 load("msnset_humanislet_int_notnormalized.RData")
 
 exprs(m) <- log2(exprs(m))
@@ -47,10 +47,6 @@ meta <- fData(m) %>%
 #identifier for patients 
 pair_mapping <- c('Pair1' = 'A', 'Pair2' = 'B', 'Pair3' = 'C', 'Pair5' = 'D', 'Pair6' = 'E', 'Pair7' = 'F')
 
-# Define the specific order for PF values
-# specific_order <- c("CXCL11_2", "CXCL11_1", "CXCL10_8", "CXCL10_7", "CXCL10_6", 
-#                     "CXCL10_4", "CXCL10_3", "CXCL10_2", "CXCL9_1",  "CXCL1_1")
-
 plot <- x %>%
   filter(grepl("HMGN", PF)) %>%
   mutate(Patient = recode(Pair, !!!pair_mapping)) %>%
@@ -75,9 +71,6 @@ table <- meta %>%
   # mutate(PF = factor(PF, levels = specific_order)) %>%  
   arrange(desc(PF))  %>% # Arrange the data based on the ordered PF factor levels
   gt() %>%
-  # tab_header(
-  #   title = "Loadings and Custom Labels"
-  # ) %>%
   cols_label(
     PF = md("**Identifier**"),
     Gene = md("**Gene**"),
@@ -87,8 +80,6 @@ table <- meta %>%
     '#unexpected modifications' = md("**Unexpected Modification**")) # Add label for significance
 table
 
-# library(patchwork)
-# 
 combplot <- (plot/table)+
   # plot_layout(heights = unit(c(1, 1.5), "null")) + # Adjust the relative heights
   plot_annotation(tag_levels = 'A')  &
