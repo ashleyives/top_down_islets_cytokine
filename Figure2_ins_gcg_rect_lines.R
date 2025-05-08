@@ -69,7 +69,7 @@ labels <- plot2 %>%
   mutate(is_modified = if_else(mod_str == "", FALSE, TRUE)) %>% 
   mutate(firstAA = firstAA-offset) %>%
   mutate(lastAA =lastAA-offset) %>%
-  mutate(feature_name2 = paste0("Ins","(",firstAA,"-", lastAA,")", if_else(is_modified  == TRUE,"*",""))) %>%
+  mutate(feature_name2 = paste0("INS","(",firstAA,"-", lastAA,")", if_else(is_modified  == TRUE,"*",""))) %>%
   mutate(feature_name3 = fct_rev(feature_name)) %>%
   select(feature_name, feature_name2) %>%
   arrange((feature_name))
