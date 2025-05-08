@@ -14,6 +14,11 @@ load("res_forvolcano.RData")
 res <- res %>%
   filter(notna > 4) #must be in at least 4 of 12 total samples
 
+export <- res %>%
+  dplyr::select(-., -mods, -t, -B, -AveExpr, -df.total, -notna, -MissingPercent, -contrast, -pcGroup, -protLength, -PF, -proteoform_id)
+
+write_xlsx(export, "supplementary_table_logfc.xlsx")
+
 minpoint <- 2
 maxpoint <- 6
 
