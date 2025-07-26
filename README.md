@@ -1,7 +1,9 @@
-# top_down_islets_cytokine
 This repository is for hosting the scripts and files to reproduce the analyses described in the listed manuscript.
 
-A description of each item in the repository: 
+# Experimental overview:
+![alt text](https://github.com/ashleyives/top_down_islets_cytokine/blob/main/Figure_1A_tdislets.png "Logo Title Text 1")
+
+# A description of each item in the repository: 
 - **limmaFit.R** ### Implemented in "1_DEA.R".
 - **limmaDEA.R** ### Implemented in "1_DEA.R".
 - **0a_loading_intensity_data.R** Converts the output of TopPIC searches to an MSnSet object that stores label-free quantification data. Final data is on a relative log2-scale.
@@ -14,6 +16,7 @@ A description of each item in the repository:
 - **FigureSI_HMGN.R** Takes output of script "0a" and generates Figure S7: Heatmap and table summary of observed HMGN proteoforms. 
 - **FigureSI_RSD.R** Takes output of script "0a" and generates Figure S2: Histogram of relative standard deviations based on label-free quantification data. Facets data into control and cytokine treated samples. 
 - **FigureSI_chga_b_sst_rect_lines.R** Takes output of script "0b" and generates Figure S4 and S5: Rectangle plots of most frequently observed proteoforms of chromogranin-A, secretogranin-1 a.k.a. CHGB, and somatostatin.
+- **Figure_1A_tdislets.png** Graphical abstract for project. This file is for beauty and not needed for any analysis. 
 
 
 
