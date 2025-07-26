@@ -1,7 +1,10 @@
 This repository is for hosting the scripts and files to reproduce the analyses described in the listed manuscript.
 
 # Experimental overview:
-![alt text](https://github.com/ashleyives/top_down_islets_cytokine/blob/main/Figure_1A_tdislets.png "Logo Title Text 1")
+!(https://github.com/ashleyives/top_down_islets_cytokine/blob/main/Figure_1A_tdislets.png)
+
+# Data processing overview:
+!(https://github.com/ashleyives/top_down_islets_cytokine/blob/main/workflow_github_v1.png)
 
 # A description of each item in the repository: 
 - **limmaFit.R** ### Implemented in "1_DEA.R".
