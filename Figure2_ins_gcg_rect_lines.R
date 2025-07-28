@@ -1,3 +1,6 @@
+# Authors: Ashley Ives
+# Purpose: Takes output of script "0b" and generates Figure 2: Rectangle plots of most frequently observed proteoforms of insulin and glucagon.
+
 library(tidyverse)
 library(TopPICR) 
 library(MSnbase)
@@ -9,17 +12,16 @@ library(ggnewscale)
 library(scales) #colorblind palette
 library(ggthemes)
 
+# 0. Set plot defaults----------------------------------------------------------
 textsize <- 18 
 linesize <- 1
 linealpha <- 1
-
-# Assign colorblind-friendly palette to a variable
 colorblind_palette <- colorblind_pal()(8)
 
-#insulin 
-###########################################
+# 1. Load data generated in "0b_loading_spectralcount_data.R" and convert to usable format.  
 
 load("msnset_humanislet_sc_JMFclustering_wmodanno.RData")
+load("x_recluster_oct2024_sc.RData")
 
 x <- exprs(m) %>%
   as.data.frame()
@@ -49,20 +51,20 @@ plot <- fData(m) %>%
   arrange(desc(count)) %>%  # Sorts the data in descending order based on spectral_counts
   slice_head(n = 30)   # Selects the top 20 rows
 
-# plot %>%
-#   select(-mods) %>%
-#   mutate(feature_name = PF) %>%
-#   select(count, firstAA, lastAA, Proteoform, feature_name, PF, Gene, pcGroup,cleanSeq) %>%
-#   write.csv(file="unadjusted_forINSplot_2.csv")
+# WARNING: HERE SAVE THE TOP 30 PROTEOFORMS AS A .CSV. 
+# MANUALLY ANNOTATE CSV WITH BY ADDING COLUMN MOD_sTR THAT WILL BE LABEL FOR PLOT. EASIER THAN PARSING DATA IN R. 
 
-#find scans with lowest E value for each pfr filtered in plot above 
-load("x_recluster_oct2024_sc.RData")
+plot %>%
+  select(-mods) %>%
+  mutate(feature_name = PF) %>%
+  select(count, firstAA, lastAA, Proteoform, feature_name, PF, Gene, pcGroup,cleanSeq) %>%
+  write.csv(file="unadjusted_forINSplot_2.csv")
 
 plot2 <- read.csv("adjusted_forINSplot_2.csv")
 
-#set offset for SP, can change back to 0 if you want to rescale plots 
-# offset <- 24
-offset <- 0
+offset <- 0 #offset for changing if signal peptide is plotted or not 
+
+# 2. Create Figure 2A, rectangle plots of most observed insulin proteoforms. 
 
 labels <- plot2 %>%
   distinct(feature_name ,.keep_all = TRUE) %>%
@@ -206,10 +208,10 @@ combined_plot_ins <- p0 + p3 +
               guides = "collect")
 combined_plot_ins
 
-#glucagon  
-###########################################
+# 3. Create Figure 2B, rectangle plots of most observed glucagon proteoforms. 
 
 load("msnset_humanislet_sc_JMFclustering_wmodanno.RData")
+load("x_recluster_oct2024_sc.RData")
 
 x <- exprs(m) %>%
   as.data.frame()
@@ -256,20 +258,18 @@ plot <- fData(m) %>%
   arrange(desc(count)) %>%  # Sorts the data in descending order based on spectral_counts
   slice_head(n = 30)   # Selects the top 20 rows
 
-# plot %>%
-#   select(-mods) %>%
-#   mutate(feature_name = PF) %>%
-#   select(count, firstAA, lastAA, Proteoform, feature_name, PF, Gene, pcGroup,cleanSeq) %>%
-#   write.csv(file="unadjusted_forGCGplot_2.csv")
-#save this csv and manually edit to make a plot below 
+plot %>%
+  select(-mods) %>%
+  mutate(feature_name = PF) %>%
+  select(count, firstAA, lastAA, Proteoform, feature_name, PF, Gene, pcGroup,cleanSeq) %>%
+  write.csv(file="unadjusted_forGCGplot_2.csv")
 
-#find scans with lowest E value for each pfr filtered in plot above 
-load("x_recluster_oct2024_sc.RData")
+# WARNING: HERE SAVE THE TOP 30 PROTEOFORMS AS A .CSV. 
+# MANUALLY ANNOTATE CSV WITH BY ADDING COLUMN MOD_sTR THAT WILL BE LABEL FOR PLOT. EASIER THAN PARSING DATA IN R. 
 
 plot2 <- read.csv("adjusted_forGCGplot_2.csv")
 
-#set offset for SP, can change back to 0 if you want to rescale plots 
-offset <- 0
+offset <- 0 #offset for changing if signal peptide is plotted or not 
 
 labels <- plot2 %>%
   distinct(feature_name ,.keep_all = TRUE) %>%
@@ -413,7 +413,7 @@ combined_plot_gcg <- p0 + p3 +
   plot_layout(widths = c(0.5, 1),
               guides = "collect")
 
-#combine plots and save 
+#combine panels 2A and 2B and save 
 ###########################################
 
 combined_plot <- combined_plot_ins / combined_plot_gcg+
