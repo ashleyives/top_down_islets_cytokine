@@ -1,15 +1,20 @@
+
+# Authors: Tyler Sagendorf, Ashley Ives
+# Purpose: akes output of script "0a" and performs differential abundance analysis using the functions "limmaFit.R" and "limmaDEA.R".
+
 library(dplyr)
 library(ggpubr)
 library(ggrepel)
 library(tidyverse)
 library(grid) 
+library(proDA)
+
+# 0. Load in functions of differential abundance analysis------------------------
 source("limmaFit.R")
 source("limmaDEA.R")
 
-#==========================================================================
-#calc LogFC 
+# 1. Load data generated in "0a_loading_intensity_data.R" and convert to usable format.  
 
-#mlc 
 load("msnset_humanislet_int_log2center_oct2024_forTyler_wmodanno.RData")
 
 m <-  mlc 
@@ -19,7 +24,7 @@ m <- m[, with(pData(m), order(Pair, Treated))]
 fData(m) <- fData(m) %>%
   dplyr::rename(n_unexpected_modifications = `#unexpected modifications`)
 
-## Keep features that have complete data for at least two pairs ----
+## Keep features that have complete data for at least two pairs ----------------
 pair_design <- model.matrix(~ 0 + m$Pair)
 
 mat_nonmiss <- apply(!is.na(exprs(m)), 2, as.integer)
@@ -28,23 +33,12 @@ n_nonmiss <- mat_nonmiss %*% pair_design
 
 keep <- apply(n_nonmiss == 2L, 1, function(xi) sum(xi) >= 2L)
 table(keep)
-#numbers changed from when i oringially tried this 
-# FALSE  TRUE
-#   597   829
-
 m2 <- m[keep, ]
 
-
-## Normalize data ----
+## Normalize data using median polish-------------------------------------------
 m2 <- MSnSet.utils::normalizeByGlob(m2, method = "once")
 
-boxplot(exprs(m2)) 
-# Different samples seem to have different variances
-
-
-## MDS plot ----
-
-# Color by pairs
+## MDS plot, color by donor ----
 idx <- match(m2$Pair, sort(unique(m2$Pair)))
 
 col <- c("black", "red", "green", "blue", "orange", "purple")
@@ -52,13 +46,12 @@ col <- col[idx]
 
 labels <- c(m2$Pair)
 
-#this is screwed up now, plotting full dataset name instead of letter 
 pdf(file = "humanislet_processed_MSnSet_MDS_plot_2.pdf",
     width = 6, height = 5)
 plotMDS(exprs(m2), col = col, labels=labels)
 dev.off()
 
-## Differential analysis ----
+# 2. Perform differential analysis --------------------------------------------
 
 # Create fitted object. The block argument makes this a paired comparison
 fit <- limmaFit(object = m2,
@@ -72,13 +65,6 @@ res <- limmaDEA(fit = fit) %>%
   arrange(P.Value) %>%
   mutate(contrast = gsub("Treated(?! )", "", contrast, perl = TRUE))
 
-# save(res, file="Tyler_DEA_results.RData")
-# 
-# write.table(res, file = "Tyler_DEA_results.txt", 
-#             quote = FALSE, row.names = FALSE, sep = "\t")
-
-library(dplyr)
-
 # Identify list columns
 list_columns <- sapply(res, is.list)
 
@@ -86,11 +72,10 @@ list_columns <- sapply(res, is.list)
 res <- res %>%
   mutate(across(where(is.list), ~ sapply(., toString)))
 
-#add data completeness
-library(proDA)
-
 x_final <- as.data.frame(m) %>%
   t()
+
+# 3. Add data completeness, i.e. what percentage of samples proteoform is observed in.
 
 rowwise_na_summary <- apply(x_final, 1, function(x) sum(!is.na(x))) %>%
   as.data.frame() %>%
@@ -116,11 +101,7 @@ hist(res$P.Value, breaks = seq(0, 1, 0.05),
      main = NA)
 dev.off()
 
-# Count number of significant proteoforms at 10% FDR
-table(res$adj.P.Val < 0.1)
-# FALSE  TRUE
-#   825     4
-
+#save data, will be input for "Figure3_volcano_plots_rawp.R"
 save(res, file="res_forvolcano.RData")
 write.csv(res, file= "logFC_TDislet.csv")
 
