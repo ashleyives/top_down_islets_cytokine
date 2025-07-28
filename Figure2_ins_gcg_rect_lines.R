@@ -413,8 +413,7 @@ combined_plot_gcg <- p0 + p3 +
   plot_layout(widths = c(0.5, 1),
               guides = "collect")
 
-#combine panels 2A and 2B and save 
-###########################################
+#combine panels 2A and 2B and save ---------------------------------------------
 
 combined_plot <- combined_plot_ins / combined_plot_gcg+
   plot_annotation(tag_levels = list('A'))& 
