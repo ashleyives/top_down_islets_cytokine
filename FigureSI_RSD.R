@@ -1,8 +1,13 @@
+# Authors: Ashley Ives 
+# Purpose: Takes output of script "0a" and generates Figure S2: Histogram of relative standard deviations based on label-free quantification data. Facets data into control and cytokine treated samples.
+
 library(dplyr)
 library(tibble)
 library(MSnSet.utils)
 library(proteomicsCV)
 library(tidyverse)
+
+# 1. Load raw intensity data, convert to log2 scale and perform median normalization
 
 nm = load("msnset_humanislet_int_notnormalized.RData")
 
@@ -18,6 +23,8 @@ data <- as.data.frame((exprs(m)))
 # Subset the columns based on their names containing "Treated" or "Untreated"
 treated <- data[, grepl("Treated", colnames(data))]
 untreated <- data[, grepl("Nottreated", colnames(data))]
+
+# Plotting of RSDs, split into cytokine treated and control samples ------------
 
 treatedplot <- treated %>%
   rowwise() %>%

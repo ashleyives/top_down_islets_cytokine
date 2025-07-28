@@ -1,8 +1,13 @@
+# Authors: Ashley Ives, JAmes Fulcher 
+# Purpose: Converts the output of TopPIC searches to an MSnSet object that stores label-free quantification data. Final data is on a relative log2-scale.
+
 library(tidyverse)
 library(TopPICR) 
 library(MSnbase)
 library(MSnSet.utils)
 library(PNNL.DMS.utils)
+
+# 1. Load TopPIC out files -----------------------------------------------------
 
 if("toppic_output_humanislet.RData" %in% list.files()){
   load("toppic_output_humanislet.RData")
@@ -23,27 +28,17 @@ feat <- feat %>%
   mutate(CV = as.character(str_sub(Dataset,-2,-1))) %>%
   mutate(Dataset = as.character(str_sub(Dataset,1,-5))) 
 
-#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!
-#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!
-# Identified feature steps
-#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!
-#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!
+# 2. Polish proteoform spectral matches prior to making MSnSet------------------ 
 
 # Remove erroneous genes ---------------
-# What does this do? In case a proteoform assigned to multiple genes,
-# this function selects the gene with the lowest E-value.
-x_err <- rm_false_gene(ids) #rename !!!
+x_err <- rm_false_gene(ids) 
 
-
-# getting protLength (parent protein length)
-# No need to match. Just need to link accessions.
-# 1. read fasta and 
-# 2. link by `Protein accession` or UniProtAcc
 
 fst <- Biostrings::readAAStringSet(
   file.path(r"(\\gigasax\DMS_FASTA_File_Archive\Dynamic\Forward\)",
             "ID_008274_9D2E95FB.fasta"))
 
+# assign the length of the total gene to proteoforms, needed for later plotting 
 add_protein_length <- function(x, fst_obj){
   fst_df <- data.frame(`Protein accession` = names(fst_obj),
                        protLength = BiocGenerics::width(fst_obj), 
@@ -54,18 +49,15 @@ add_protein_length <- function(x, fst_obj){
   return(x)
 }
 
-
 x_err <- add_protein_length(x_err, fst)
 
-compute_fdr(x_err)
+compute_fdr(x_err) #sanity check fdr 
 
-# looks like we don't need this step anymore
 x_aug <- x_err
 
-# FDR control ---------------
+# FDR control ------------------------------------------------------------------
 
-# First find the E-value threshold for each of the three annotation types.
-# FDR is calculated at Gene level.
+# Find the E-value threshold. FDR is calculated at Gene level.
 the_cutoff <- find_evalue_cutoff(x = x_aug,
                                  fdr_threshold = 0.01)
 
@@ -73,19 +65,16 @@ the_cutoff <- find_evalue_cutoff(x = x_aug,
 x_fdr <- apply_evalue_cutoff(x = x_aug,
                              e_vals = the_cutoff)
 
-compute_fdr(x_fdr)
-
+compute_fdr(x_fdr) #sanity check 
 
 # Proteoform inference ---------------
 x_ipf <- infer_prot(x_fdr)
 
-
-###in progress? 
 x_inferred <- set_pf_level(x_ipf)
 
 compute_fdr(x_ipf)
 
-# Align retention time ---------------
+# Align retention time ---------------------------------------------------------
 
 # Create the model that will be used to align each retention time. The model is
 # created between a reference data set and all other data sets.
@@ -103,7 +92,6 @@ x_art <- align_rt(
   var_name = "Retention time"
 )
 
-
 # Recalibrate the mass ---------------
 
 # Calculate the error between the `Precursor mass` and the `Adjusted precursor
@@ -117,7 +105,8 @@ x_error$rt_sd <- 300
 x_rcm <- recalibrate_mass(x = x_art,
                           errors = x_error,
                           var_name = "Precursor mass") 
-# Cluster ---------------
+
+# Cluster ----------------------------------------------------------------------
 # Key step. But doesn't take too long.
 x_cluster <- cluster(x = x_rcm,
                      errors = x_error,
@@ -126,7 +115,7 @@ x_cluster <- cluster(x = x_rcm,
                      min_size = 2)
 
 
-# Group clusters ---------------
+# Group clusters ---------------------------------------------------------------
 x_recluster <- create_pcg(x = x_cluster,
                           errors = x_error,
                           n_mme_sd = 5,
@@ -146,7 +135,7 @@ x_meta <- create_mdata(x = x_recluster,
 save(x_meta, file="x_meta.RData")
 
 
-# Align unidentified features ---------------
+# Align unidentified features --------------------------------------------------
 
 # Align the unidentified feature retention times with the model created by the
 # identified feature retention times.
@@ -155,7 +144,7 @@ feat_art <- align_rt(
   model = the_model,
   var_name = "Time_apex")
 
-# Recalibrate unidentified feature mass ---------------
+# Recalibrate unidentified feature mass ----------------------------------------
 
 # Recalibrate the unidentified feature masses with the model created by the
 # identified feature masses.
@@ -172,6 +161,9 @@ feat_rtv <- match_features(ms2 = x_recluster,
                            n_rt_sd = 3
 )
 
+
+# 3. Create and save MSnSet object---------------------------------------------- 
+
 x <- feat_rtv %>%
   mutate(feature_name = paste(Gene, pcGroup, CV, sep = "_"),
          sample_name = Dataset) %>%
@@ -186,10 +178,6 @@ x_expr <- x %>%
   dplyr::select(-feature_name) %>%
   as.matrix()
 
-# x_expr <- log2(x_expr)
-#uncheck if you want log2 
-
-# features
 x_feat <- x %>%
   group_by(Gene,pcGroup, CV, feature_name) %>%
   summarize(median_intensity = median(Intensity),
@@ -218,23 +206,17 @@ x_pheno <- x %>%
                           Letter == "G" ~ "Pair6",
                           Letter == "M" ~ "Pair6",
                           Letter == "I" ~ "Pair7",
-                          Letter == "L" ~ "Pair7")) %>%
+                          Letter == "L" ~ "Pair7")) %>% #assign an arbitrary identifier for each donor, letters correspond to LCMS runs  
   {rownames(.) <- .$sample_name;.} 
 
 m <- MSnSet(x_expr, x_feat[rownames(x_expr),], x_pheno[colnames(x_expr),])
 
-image_msnset(m)
-
 save(x_feat, file="featuredata_beforerollup.RData")
 
-#if log2
-# m <- rrollup(m, "proteoform_id", rollFun = "-", verbose = FALSE)
-# save(m, file="msnset_humanislet_log2int.RData")
-
-#if normal scale 
+# Rrollup of intensity data, this is creating one quantitation value per proteoform across three compensation voltages 
 m <- rrollup(m, "proteoform_id", rollFun = "/", verbose = FALSE)
 
-#' recover proteoform info, it all get's lost in rollup step 
+#recover proteoform info, it all get's lost in rrollup step 
 x_meta <- x_meta %>%
   mutate(proteoform_id = paste(Gene, pcGroup, sep="_")) %>%
   as.data.frame() %>%
@@ -247,11 +229,11 @@ mlc <- log2_zero_center(m)
 
 save(mlc, file="msnset_humanislet_int_log2center_oct2024_forTyler.RData")
 
-###annotate with mods 
+# 4. Annotate modifications/ unknown mass shifts from open mod search using UniMod database 
 
 x <- fData(mlc)
 
-#these lines reformat Nterm acetyl from new version ([Acetyl]-aa to old version (aa)[Acetyl ])
+#reformat Nterm acetyl from new version ([Acetyl]-aa to old version (aa)[Acetyl ])
 x <- x %>% 
   mutate(Proteoform = case_when(str_detect(Proteoform, "\\[Acetyl]-") ~ paste0(substr(gsub(pattern = "\\[Acetyl]-", x = Proteoform, replacement = ""), 1,2), "(", substr(gsub(pattern = "\\[Acetyl]-", x = Proteoform, replacement = ""), 3,3), ")[Acetyl]", substr(gsub(pattern = "\\[Acetyl]-", x = Proteoform, replacement = ""),4,nchar(gsub(pattern = "\\[Acetyl]-", x = Proteoform, replacement = ""))))
                                 , !str_detect(Proteoform, "\\[Acetyl]-") ~ Proteoform)) 
@@ -296,8 +278,6 @@ x <- x %>%
 
 x <- annotate_Nterm_acetyls(as.data.frame(x), nterm_tol = 3, acetyl_id = "Acetyl")
 rownames(x) <- x$proteoform_id
-
-####need to switchh from m to m1 if int or sc 
 
 fData(mlc) <- x
 
