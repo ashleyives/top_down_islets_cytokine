@@ -1,8 +1,13 @@
+# Authors: Ashley Ives, James Fulcher 
+# Purpose: Converts the output of TopPIC searches to an MSnSet object that stores label-free quantification data. Final data is on a relative log2-scale.
+
 library(tidyverse)
 library(TopPICR) 
 library(MSnbase)
 library(MSnSet.utils)
 library(PNNL.DMS.utils)
+
+# 1. Load TopPIC out files -----------------------------------------------------
 
 if("toppic_output_humanislet.RData" %in% list.files()){
   load("toppic_output_humanislet.RData")
@@ -11,8 +16,6 @@ if("toppic_output_humanislet.RData" %in% list.files()){
   save(toppic_output, file = "toppic_output_humanislet.RData")
 }
 
-# remove NA annotations. We can't handle them at the FDR filter tuning step
-# Those are non-uniprot IDs, like short ORFs and contaminants
 ids <- ids %>%
   dplyr::filter(!is.na(AnnType))
 
@@ -23,22 +26,11 @@ feat <- feat %>%
   mutate(CV = as.character(str_sub(Dataset,-2,-1))) %>%
   mutate(Dataset = as.character(str_sub(Dataset,1,-5))) 
 
-#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!
-#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!
-# Identified feature steps
-#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!
-#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!
+# 2. Polish proteoform spectral matches prior to making MSnSet------------------ 
 
-# Remove erroneous genes ---------------
-# What does this do? In case a proteoform assigned to multiple genes,
-# this function selects the gene with the lowest E-value.
-x_err <- rm_false_gene(ids) #rename !!!
+# Remove erroneous genes --------------- 
 
-
-# getting protLength (parent protein length)
-# No need to match. Just need to link accessions.
-# 1. read fasta and 
-# 2. link by `Protein accession` or UniProtAcc
+x_err <- rm_false_gene(ids) 
 
 fst <- Biostrings::readAAStringSet(
   file.path(r"(\\gigasax\DMS_FASTA_File_Archive\Dynamic\Forward\)",
@@ -54,26 +46,17 @@ add_protein_length <- function(x, fst_obj){
   return(x)
 }
 
-
+# assign the length of the total gene to proteoforms, needed for later plotting 
 x_err <- add_protein_length(x_err, fst)
 
 compute_fdr(x_err)
 
-# looks like we don't need this step anymore
 x_aug <- x_err
 
-# Filter by cleanSeq count ---------------
+# FDR control ------------------------------------------------------------------
 
-# really minimal filter
-# x_fbc <- filter_by_count(x = x_aug,
-#                          count_within = c("Dataset", "Scan(s)"),
-#                          count = "cleanSeq",
-#                          threshold = 2) # better to switch to 3 and drop the E-value filter altogether.
+# Find the E-value threshold. FDR is calculated at Gene level.
 
-# FDR control ---------------
-
-# First find the E-value threshold for each of the three annotation types.
-# FDR is calculated at Gene level.
 the_cutoff <- find_evalue_cutoff(x = x_aug,
                                  fdr_threshold = 0.01)
 
@@ -81,8 +64,7 @@ the_cutoff <- find_evalue_cutoff(x = x_aug,
 x_fdr <- apply_evalue_cutoff(x = x_aug,
                              e_vals = the_cutoff)
 
-compute_fdr(x_fdr)
-
+compute_fdr(x_fdr) #sanity check 
 
 # Proteoform inference ---------------
 x_ipf <- infer_prot(x_fdr)
@@ -108,7 +90,6 @@ x_art <- align_rt(
   model = the_model,
   var_name = "Retention time"
 )
-
 
 # Recalibrate the mass ---------------
 
@@ -176,10 +157,9 @@ x <- x_recluster %>%
          sample_name = Dataset) %>%
   dplyr::select(-Dataset)
 
-#uncheck if you want log2 
 
-#counts all PSMs across CVs, does not require rrollup 
-#not derived from x, derived from x_recluster, but
+# 3. Create and save MSnSet object---------------------------------------------- 
+
 x_expr <- x %>%
   mutate(feature_name = paste(Gene, pcGroup, sep="_")) %>% #added this line, not sure if this works correctly 
   select(feature_name, sample_name, `Scan(s)`) %>%
@@ -192,10 +172,6 @@ x_expr <- x %>%
   select(-feature_name) %>%
   as.matrix()
 
-# x_expr <- log2(x_expr)
-#uncheck if you want log2 
-
-# features
 x_feat <- x %>%
   group_by(Gene, pcGroup) %>% #feature name contains CV as well so it messes up rownames
   dplyr::summarize(count = n(), .groups = "keep") %>%
@@ -223,18 +199,18 @@ x_pheno <- x %>%
                           Letter == "G" ~ "Pair6",
                           Letter == "M" ~ "Pair6",
                           Letter == "I" ~ "Pair7",
-                          Letter == "L" ~ "Pair7")) %>%
+                          Letter == "L" ~ "Pair7")) %>% #assign an arbitrary identifier for each donor, letters correspond to LCMS runs 
   {rownames(.) <- .$sample_name;.} 
 
 m <- MSnSet(x_expr, x_feat[rownames(x_expr),], x_pheno[colnames(x_expr),])
 
 save(m, file="msnset_humanislet_sc_JMFclustering.RData")
 
-###annotate with mods 
+# 4. Annotate modifications/ unknown mass shifts from open mod search using UniMod database 
 
 x <- fData(m)
 
-#these lines reformat Nterm acetyl from new version ([Acetyl]-aa to old version (aa)[Acetyl ])
+#reformat Nterm acetyl from new version ([Acetyl]-aa to old version (aa)[Acetyl ])
 x <- x %>% 
   mutate(Proteoform = case_when(str_detect(Proteoform, "\\[Acetyl]-") ~ paste0(substr(gsub(pattern = "\\[Acetyl]-", x = Proteoform, replacement = ""), 1,2), "(", substr(gsub(pattern = "\\[Acetyl]-", x = Proteoform, replacement = ""), 3,3), ")[Acetyl]", substr(gsub(pattern = "\\[Acetyl]-", x = Proteoform, replacement = ""),4,nchar(gsub(pattern = "\\[Acetyl]-", x = Proteoform, replacement = ""))))
                                 , !str_detect(Proteoform, "\\[Acetyl]-") ~ Proteoform)) 
@@ -278,9 +254,7 @@ x <- x %>%
   mutate(mods = map(mods, TopPICR:::annotate_masses, mass_annotation_table, matching_tol = .Machine$double.eps))
 
 x <- annotate_Nterm_acetyls(as.data.frame(x), nterm_tol = 3, acetyl_id = "Acetyl")
-# rownames(x) <- x$proteoform_id
-
-####need to switchh from m to m1 if int or sc 
+rownames(x) <- x$proteoform_id
 
 fData(m) <- x
 

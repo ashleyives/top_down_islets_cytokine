@@ -1,4 +1,4 @@
-# Authors: Ashley Ives, JAmes Fulcher 
+# Authors: Ashley Ives, James Fulcher 
 # Purpose: Converts the output of TopPIC searches to an MSnSet object that stores label-free quantification data. Final data is on a relative log2-scale.
 
 library(tidyverse)
