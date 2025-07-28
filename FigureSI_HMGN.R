@@ -47,7 +47,7 @@ SampleID_meta <- x %>%
 meta <- fData(m) %>%
   dplyr::select(firstAA, lastAA, PF, Proteoform, Gene, UniProtAcc, '#unexpected modifications')
 
-# 3. Generate Figure S##. Heatmap of HMGN proteoforms.--------------------------
+# 2. Generate Figure S##. Heatmap of HMGN proteoforms.--------------------------
 
 #identifier for patients 
 pair_mapping <- c('Pair1' = 'A', 'Pair2' = 'B', 'Pair3' = 'C', 'Pair5' = 'D', 'Pair6' = 'E', 'Pair7' = 'F')
