@@ -1,4 +1,4 @@
-This repository is for hosting the scripts and files to reproduce the analyses described in the listed manuscript.
+This repository is for hosting the scripts and files to reproduce the analyses described in the listed manuscript (https://doi.org/10.1101/2025.05.12.653562)
 
 # Experimental overview:
 ![alt text](https://github.com/ashleyives/top_down_islets_cytokine/blob/main/Figure_1A_tdislets.png)
