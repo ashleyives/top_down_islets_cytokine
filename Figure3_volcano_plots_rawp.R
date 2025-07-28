@@ -1,3 +1,5 @@
+# Authors: Ashley Ives
+# Purpose: Takes output of script "1_DEA" and generates Figure 3: Volcano plots of all and curated proteoforms.
 
 library(dplyr)
 library(ggpubr)
@@ -5,10 +7,18 @@ library(ggrepel)
 library(tidyverse)
 library(grid) #for weird volcano plot labels 
 
+# 0. Set plot defaults----------------------------------------------------------
+
 colorBlindGrey8   <- c("#999999", "#E69F00", "#56B4E9", "#009E73", 
                        "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
 
-#Data is made in 1_DEA.R 
+minpoint <- 2
+maxpoint <- 6
+
+xpositionlab <- 2.4 
+
+# 1. Load data generated in "1_DEA.R" and convert to usable format.------------- 
+
 load("res_forvolcano.RData")
 
 res <- res %>%
@@ -17,22 +27,11 @@ res <- res %>%
 export <- res %>%
   dplyr::select(-., -mods, -t, -B, -AveExpr, -df.total, -notna, -MissingPercent, -contrast, -pcGroup, -protLength, -PF, -proteoform_id)
 
-write_xlsx(export, "supplementary_table_logfc.xlsx")
+write_xlsx(export, "supplementary_table_logfc.xlsx") #for supplementary 
 
-minpoint <- 2
-maxpoint <- 6
+# 2. Generate Figure 3A. Volcano plot of all quantifiable proteoforms.---------- 
 
-xpositionlab <- 2.4 
-
-#p values for all entries 
 panelp <- res %>%
-  # mutate(significant = case_when(
-  #   P.Value > 0.05 & (logFC < -1 | logFC > 1) ~ "log2FC",
-  #   P.Value < 0.05 & logFC <= -1 ~ "Downregulated",
-  #   P.Value < 0.05 & logFC >= 1 ~ "Significant after adjustment",
-  #   P.Value > 0.05 & logFC >= -1 & logFC <= 1 ~ "NS",
-  #   TRUE ~ "Other" # Adding a fallback category for debugging or handling unexpected cases
-  # )) %>%
   mutate(significant = case_when(
     P.Value > 0.05 & (logFC < -1 | logFC > 1) ~ "black",
     P.Value < 0.05 & logFC <= -1 ~ "red3",
@@ -82,7 +81,7 @@ panelp <- res %>%
   ggtitle("All Proteforms")
 panelp
 
-#only gcg with categories based on fragment range 
+# 3. Generate Figure 3C. Volcano plot of all quantifiable glucagon proteoforms.
 panelgcg <- res %>%
   filter(Gene == "GCG") %>%
   mutate(segment = case_when(
@@ -127,22 +126,7 @@ panelgcg <- res %>%
   ggtitle("GCG Proteforms")
 panelgcg
 
-#how many proteoforms go up or down per region 
-res %>%
-  filter(Gene == "GCG") %>%
-  mutate(segment = case_when(
-    between(firstAA, 18, 52) & between(lastAA, 18, 52) ~ "Glicentin-related polypeptide",
-    between(firstAA, 53, 91) & between(lastAA, 53, 91) ~ "Oxyntomodulin",
-    between(firstAA, 92, 178) & between(lastAA, 92, 178) ~ "Major proglucagon fragment/GLP",
-    TRUE ~ "Other"
-  )) %>%
-  # filter(segment == "GLP") %>%
-  # filter(segment == "Oxyntomodulin") %>%
-  filter(segment == "Glicentin") %>%
-  filter(logFC > 0) %>%
-  nrow()
-
-#only CHGA with categories based on fragment range 
+# 4. Generate Figure 3D. Volcano plot of all quantifiable chromograninA proteoforms.
 panelchga <- res %>%
   filter(Gene == "CHGA") %>%
   mutate(segment = case_when(
@@ -189,25 +173,8 @@ panelchga <- res %>%
   ggtitle("CHGA Proteforms")
 panelchga
 
-res %>%
-  filter(Gene == "CHGA") %>%
-  mutate(segment = case_when(
-    between(firstAA, 1, 131) & between(lastAA, 1, 131) ~ "Vasostatin1/2",
-    between(firstAA, 132, 225) & between(lastAA, 132, 225) ~ "EA-92",
-    between(firstAA, 228, 275) & between(lastAA, 228, 275) ~ "228-275",
-    between(firstAA, 358, 390) & between(lastAA, 358, 390) ~ "LF-19/Catestatin",
-    between(firstAA, 413, 457) & between(lastAA, 413, 457) ~ "GR-44/ER-37",
-    between(firstAA, 316, 339) & between(lastAA, 316, 339) ~ "SS-18",
-    TRUE ~ "Other"
-  )) %>%
-  filter(segment == "Vasostatin1/2") %>%
-  # filter(segment == "SS-18") %>%
-  # filter(segment == "LF-19/Catestatin") %>%
-  filter(logFC > 0) %>%
-  nrow()
+# 5. Generate Figure 3B. Volcano plot of all quantifiable insulin proteoforms.
 
-
-#only ins 
 panelins <- res %>%
   filter(Gene == "INS") %>%
   mutate(segment = case_when(
@@ -251,6 +218,8 @@ panelins <- res %>%
   xlim(-2.5,2.5)+
   ggtitle("INS Proteforms")
 panelins
+
+# 6. Combine all plots and save-------------------------------------------------
 
 library(patchwork)
 
