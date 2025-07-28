@@ -1,3 +1,6 @@
+# Authors: Ashley Ives
+# Purpose: Takes output of script "0a" and generates Figure 1, including quantifying the number of distinct and average proteoforms/genes and the completeness of those identifications. 
+#Also generates Figure S1. Histogram of observed proteoform monoisotopic masses.
 
 library(tidyverse)
 library(TopPICR) 
@@ -8,6 +11,8 @@ library(EnhancedVolcano)
 library(EnhancedVolcano)
 library(ggplot2)
 library(ggrepel)
+
+# 1. Load in data generated in "0a_loading_intensity_data.R" -------------------
 
 load("x_meta.RData")
 load("msnset_humanislet_log2int.RData")
@@ -37,6 +42,8 @@ x_long <- x %>%
 mean_mass <- mean(x_meta$mass, na.rm = TRUE)
 median_mass <- median(x_meta$mass, na.rm = TRUE)
 
+# 2. Figure for histogram of observed proteoform masses-------------------------
+
 # Creating the histogram of masses 
 hist <- ggplot(x_meta, aes(x = mass)) + 
   geom_histogram(binwidth = 500, color = "black", fill = "#999999", alpha = 0.7) +
@@ -57,6 +64,7 @@ ggsave(plot = hist, filename= "FigureS_mass_hist.png", scale=1,
        units = c("mm"))
 
 
+# 3. Figure 1. Overview of proteoform IDs and data completeness-----------------
 
 #data completeness insulin only 
 holes_pfr_ins <- x_long %>%
@@ -181,7 +189,6 @@ unique_pfr <- x_long %>%
   distinct(proteoform_id) %>% 
   tally() 
 
-
 unique_pfr_ins <- x_long %>%
   filter(str_detect(proteoform_id, "INS")) %>%
   filter(!is.na(Intensity)) %>%
@@ -222,7 +229,7 @@ panelb
 
 library(patchwork)
 
-# Create a blank plot
+# Create a blank plot, this is to generate empty space for the workflow figure which is made outside of R. 
 blank_plot <- ggplot() + 
   theme_void(base_size = textsize) +  # Ensure it's completely empty
   labs(tag = "A")  # Add a tag
@@ -235,10 +242,6 @@ combined_plot <- (blank_plot / (panela + panelb + holes_pfr + plot_layout(widths
     plot.margin = unit(c(0.2, 0.2, 0.2, 0.2), "cm")
   )
 
-# Print the combined plot
-print(combined_plot)
-
-#manually saved 
 ggsave(plot = combined_plot, filename= "Figure1_overview.png", scale=2.2,
        width = 170,
        height = 130,
