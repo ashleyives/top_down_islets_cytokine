@@ -7,8 +7,8 @@ This repository is for hosting the scripts and files to reproduce the analyses d
 ![alt text](https://github.com/ashleyives/top_down_islets_cytokine/blob/main/workflow_github_v1.png)
 
 # A description of each item in the repository: 
-- **limmaFit.R** ### Implemented in "1_DEA.R".
-- **limmaDEA.R** ### Implemented in "1_DEA.R".
+- **limmaFit.R** Wrapper function for LIMMA linear modeling. It preprocesses the data (e.g., drops rows/columns with all NAs, checks model specifications), fits linear models, and applies empirical Bayes moderation to assess differential expression across features. Implemented in "1_DEA.R".
+- **limmaDEA.R** Wrapper for performing differential analysis using the limma package, specifically through moderated t-tests or F-tests on coefficients derived from an MArrayLM object. It allows for flexible testing across multiple contrasts or coefficients, with options for global or individual adjustment of p-values to control the false discovery rate. Implemented in "1_DEA.R".
 - **0a_loading_intensity_data.R** Converts the output of TopPIC searches to an MSnSet object that stores label-free quantification data. Final data is on a relative log2-scale.
 - **0b_loading_spectralcount_data.R** Converts the output of TopPIC searches to an MSnSet object that stores spectral count data. 
 - **1_DEA.R** Takes output of script "0a" and performs differential abundance analysis using the functions "limmaFit.R" and "limmaDEA.R". 
