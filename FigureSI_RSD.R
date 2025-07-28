@@ -23,7 +23,7 @@ data <- as.data.frame((exprs(m)))
 treated <- data[, grepl("Treated", colnames(data))]
 untreated <- data[, grepl("Nottreated", colnames(data))]
 
-# Plotting of RSDs, split into cytokine treated and control samples ------------
+# 2. Plotting of RSDs, split into cytokine treated and control samples ---------
 
 treatedplot <- treated %>%
   rowwise() %>%
