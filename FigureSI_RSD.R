@@ -4,7 +4,6 @@
 library(dplyr)
 library(tibble)
 library(MSnSet.utils)
-library(proteomicsCV)
 library(tidyverse)
 
 # 1. Load raw intensity data, convert to log2 scale and perform median normalization
