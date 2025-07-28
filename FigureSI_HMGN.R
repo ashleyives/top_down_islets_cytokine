@@ -1,8 +1,13 @@
 
+# Authors: Ashley Ives
+# Purpose: Takes output of script "0a" and generates Figure S7: Heatmap and table summary of observed HMGN proteoforms.
+
 library(tidyverse)
 library(viridis)
 library(gt)
 library(patchwork)
+
+# 1. Load data generated in "0a_loading_intensity_data.R" and convert to usable format.  
 
 load("msnset_humanislet_int_notnormalized.RData")
 
@@ -42,7 +47,7 @@ SampleID_meta <- x %>%
 meta <- fData(m) %>%
   dplyr::select(firstAA, lastAA, PF, Proteoform, Gene, UniProtAcc, '#unexpected modifications')
 
-##########visualize all HMGN observations 
+# 3. Generate Figure S##. Heatmap of HMGN proteoforms.--------------------------
 
 #identifier for patients 
 pair_mapping <- c('Pair1' = 'A', 'Pair2' = 'B', 'Pair3' = 'C', 'Pair5' = 'D', 'Pair6' = 'E', 'Pair7' = 'F')
