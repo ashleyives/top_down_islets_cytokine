@@ -20,7 +20,7 @@ This repository is for hosting the scripts and files to reproduce the analyses d
 - **FigureSI_RSD.R** Takes output of script "0a" and generates Figure S2: Histogram of relative standard deviations based on label-free quantification data. Facets data into control and cytokine treated samples. 
 - **FigureSI_rectangle_plots.R** Takes output of script "0b" and generates Figure S##-S##: Rectangle plots of most frequently observed proteoforms of chromogranin-A, secretogranin-1 a.k.a. chromogranin-B, secretogranin-2 a.k.a. chromogranin-C somatostatin, pancreatic polypeptide prohormone, islet amyloid polypeptide, and VGF.  
 - **Figure_1A_tdislets.png** Graphical abstract for project. This file is not needed for analysis.
-- - **workflow_github_v2.png** Workflow figure for running scripts in repository. This file is not needed for analysis. 
+- **workflow_github_v2.png** Workflow figure for running scripts in repository. This file is not needed for analysis. 
 
 
 
